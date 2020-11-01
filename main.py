@@ -12,8 +12,6 @@ from fiwareAPI import FiwareApi
 
 POST_URL = "http://fiware-iot.ddns.net:7896/iot/d?k="
 GET_URL = "http://fiware-iot.ddns.net:1026/v2/entities/"
-# POST_URL = "UltrasonicSensor"
-# GET_URL = "TemperatureSensor"
 
 
 def call_fiware_api(buffer):
