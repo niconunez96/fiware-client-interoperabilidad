@@ -1,9 +1,13 @@
-#  INTEROPERABILIDAD
-#  FIWARE FOR SERIAL COMMUNICATION
-#  POST EXAMPLE 'http://68.183.112.17:7896/iot/d?k=2tggokgpepnvsb2uv4s40d59oc&i=BDTempCasa001#t|30#'
-#  GET EXAMPLE  'http://68.183.112.17:1026/v2/entities/urn:ngsd-ld:BDTempCasa:001?options=values&attrs=measure'
+"""
+INTEROPERABILIDAD
+FIWARE FOR SERIAL COMMUNICATION
+POST EXAMPLE 'http://68.183.112.17:7896/iot/d?k=2tggokgpepnvsb2uv4s40d59oc&i=BDTempCasa001#t|30#'
+GET EXAMPLE  'http://68.183.112.17:1026/v2/entities/urn:ngsd-ld:BDTempCasa:001?options=values&attrs=measure'
+"""
+
 from datetime import datetime
-from colorit import background, color, Colors
+from colorit import color, Colors
+from serial.serialutil import SerialException
 import serial
 import serial.tools.list_ports
 import requests
@@ -12,10 +16,10 @@ import requests
 # CONST
 VERSION = "0.12"
 HEADERS = {'fiware-service': "openiot", 'fiware-servicepath': "/"}
-# POST_URL = "http://fiware-iot.ddns.net:7896/iot/d?k="
-# GET_URL = "http://fiware-iot.ddns.net:1026/v2/entities/"
-POST_URL = "UltrasonicSensor"
-GET_URL = "TemperatureSensor"
+POST_URL = "http://fiware-iot.ddns.net:7896/iot/d?k="
+GET_URL = "http://fiware-iot.ddns.net:1026/v2/entities/"
+# POST_URL = "UltrasonicSensor"
+# GET_URL = "TemperatureSensor"
 
 
 class CantReadPort(Exception):
@@ -24,37 +28,35 @@ class CantReadPort(Exception):
 
 class FiwareApi:
     def post(self, buffer):
-        return buffer
-        # data = buffer[buffer.find('#') + 1: buffer.find('\\')]
-        # buffer = buffer[2:buffer.find('#')]
-        # try:
-        #     r = requests.post(buffer, data)
-        #     pastebin_url = r.text
-        #     if len(pastebin_url) == 0:
-        #         print("{} POST  {}  Data: {}".format(datetime.now(), r, data))
-        #         return "POST['{}']".format(data)
-        #     else:
-        #         print("{} Post Error: {}".format(datetime.now(), pastebin_url))
-        #         return "POST|Error"
-        # except Exception:
-        #     print("{} Hubo un error en la operación POST", datetime.now())
-        #     return "POST|Error"
+        data = buffer[buffer.find('#') + 1: buffer.find('\\')]
+        buffer = buffer[2:buffer.find('#')]
+        try:
+            r = requests.post(buffer, data)
+            pastebin_url = r.text
+            if len(pastebin_url) == 0:
+                print("{} POST  {}  Data: {}".format(datetime.now(), r, data))
+                return "POST['{}']".format(data)
+            else:
+                print("{} Post Error: {}".format(datetime.now(), pastebin_url))
+                return "POST|Error"
+        except Exception:
+            print("{} Hubo un error en la operación POST", datetime.now())
+            return "POST|Error"
 
     def get(self, buffer):
-        return buffer
-        # try:
-        #     r = requests.get(url=buffer[2:buffer.find('\\')], headers=HEADERS)
-        #     pastebin_url = str(r.json())
-        #     print("{} GET  {}  Data: {}".format(
-        #         datetime.now(), r, pastebin_url,
-        #     ))
-        #     if(str(r).find("[200]") >= 0):
-        #         return "GET{}".format(pastebin_url)
-        #     else:
-        #         return 'GET|Error'
-        # except Exception:
-        #     print("Hubo un error en la operación GET")
-        #     return "GET|Error"
+        try:
+            r = requests.get(url=buffer[2:buffer.find('\\')], headers=HEADERS)
+            pastebin_url = str(r.json())
+            print("{} GET  {}  Data: {}".format(
+                datetime.now(), r, pastebin_url,
+            ))
+            if(str(r).find("[200]") >= 0):
+                return "GET{}".format(pastebin_url)
+            else:
+                return 'GET|Error'
+        except Exception:
+            print("Hubo un error en la operación GET")
+            return "GET|Error"
 
 
 class SerialPortReader:
@@ -78,23 +80,15 @@ class SerialPortReader:
                 timeout=2,
                 stopbits=serial.STOPBITS_ONE,
             )
-        except Exception as e:
-            raise CantReadPort(str(e))
-        try:
             lines_to_process = [
                 str(serial_port.readline())
                 for n in range(self.LINES_QTY_TO_PROCESS)
             ]
+        except SerialException as e:
+            raise CantReadPort(str(e))
         except Exception:
             pass
 
-        # for line in lines_to_process:
-        #     try:
-        #         response = call_fiware_api(line)
-        #         print(response)
-        #         # serial_port.write(response.encode())
-        #     except Exception:
-        #         print("Serial timeout")
         return lines_to_process
 
 
@@ -141,11 +135,12 @@ class UI:
         print()
         print(color("Esperando frames...", Colors.white))
 
-    def display_cant_read_port_error(self):
+    def display_cant_read_port_error(self, exception_msg):
         print(color(
-            "Error mientras se intento capturar el puerto",
+            "Error mientras se intento capturar el puerto:",
             Colors.red,
         ))
+        print(color(exception_msg, Colors.red))
 
     def display_processing_lines(self):
         print(color("Procesando 10 lineas...", Colors.white))
@@ -221,8 +216,8 @@ def capture_port_lines(ui: UI, serial_port_reader: SerialPortReader, port):
                     response = call_fiware_api(line)
                     ui.display_api_response(response)
             keep_capture_lines = should_keep_capture_lines(ui)
-    except CantReadPort:
-        ui.display_cant_read_port_error()
+    except CantReadPort as exc:
+        ui.display_cant_read_port_error(str(exc))
 
 
 def run_program(ui: UI, serial_port_reader: SerialPortReader):
