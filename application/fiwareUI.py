@@ -65,7 +65,10 @@ class ConsoleUI:
             )
 
     def display_api_response(self, response):
-        print(color(response, Colors.blue))
+        if "FrameError" in response:
+            print(color(response, Colors.red))
+        else:
+            print(color(response, Colors.blue))
 
     def display_no_lines_to_process(self):
         print(color("No hay entradas para procesar", Colors.yellow))
