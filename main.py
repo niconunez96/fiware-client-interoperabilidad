@@ -5,9 +5,9 @@ POST EXAMPLE 'http://68.183.112.17:7896/iot/d?k=2tggokgpepnvsb2uv4s40d59oc&i=BDT
 GET EXAMPLE  'http://68.183.112.17:1026/v2/entities/urn:ngsd-ld:BDTempCasa:001?options=values&attrs=measure'
 """  # noqa
 
-from fiwareSerialPortReader import SerialPortReader, CantReadPort
-from fiwareUI import UI
-from fiwareAPI import FiwareApi
+from application.fiwareSerialPortReader import SerialPortReader, CantReadPort
+from application.fiwareUI import ConsoleUI
+from application.fiwareAPI import FiwareApi
 
 
 POST_URL = "http://fiware-iot.ddns.net:7896/iot/d?k="
@@ -32,7 +32,7 @@ def is_valid_option(option, serial_ports):
     return option >= 0 and option <= ports_quantity
 
 
-def show_menu(serial_ports):
+def show_menu(serial_ports, ui: ConsoleUI):
     option = -1
     should_show_menu = True
     while should_show_menu:
@@ -49,13 +49,17 @@ def show_menu(serial_ports):
     return option
 
 
-def should_keep_capture_lines(ui: UI):
+def should_keep_capture_lines(ui: ConsoleUI):
     ui.display_process_ten_more_lines_option()
     option = str(input())
     return option not in ["N", "n"]
 
 
-def capture_port_lines(ui: UI, serial_port_reader: SerialPortReader, port):
+def capture_port_lines(
+    ui: ConsoleUI,
+    serial_port_reader: SerialPortReader,
+    port,
+):
     keep_capture_lines = True
     ui.display_waiting()
     try:
@@ -73,16 +77,16 @@ def capture_port_lines(ui: UI, serial_port_reader: SerialPortReader, port):
         ui.display_cant_read_port_error(str(exc))
 
 
-def run_program(ui: UI, serial_port_reader: SerialPortReader):
+def run_program(ui: ConsoleUI, serial_port_reader: SerialPortReader):
     serial_ports = serial_port_reader.serial_ports
-    option = show_menu(serial_ports)
+    option = show_menu(serial_ports, ui)
     ui.display_device_selected(serial_ports[option].device)
     capture_port_lines(ui, serial_port_reader, serial_ports[option].device)
 
 
 if __name__ == '__main__':
     serial_port_reader = SerialPortReader()
-    ui = UI()
+    ui = ConsoleUI()
     serial_ports = serial_port_reader.serial_ports
     ui.display_welcome()
     if not serial_ports:

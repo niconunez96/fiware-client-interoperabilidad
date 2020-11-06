@@ -1,7 +1,7 @@
 from colorit import color, Colors
 
 
-class UI:
+class ConsoleUI:
     VERSION = "0.12"
     WELCOME = """
 ***********************************
